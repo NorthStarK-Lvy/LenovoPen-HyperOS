@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">联想手写笔适配</string>
+    <string name="module_description">为 HyperOS 手写笔设置接入联想 Tab Pen Plus 的连接状态、电量和 miuix 详情页。</string>
+    <string-array name="xposed_scope"><item>com.miui.securitycore</item></string-array>
+</resources>
