@@ -1,3 +1,4 @@
+<p align="center"><img src="docs/assets/relegion-icon.svg" width="108" height="108" alt="RELEGION 应用图标"></p>
 <h1 align="center">RELEGION</h1>
 <p align="center"><strong>我[新]澎湃</strong></p>
 <p align="center">联想平板的 HyperOS 适配模块 · Vector / libxposed API 102</p>
