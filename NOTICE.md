@@ -1,15 +1,14 @@
-# Third-party components
+# 第三方许可
 
-The MIT license covers this module's own source code. Dependencies retain their
-respective licenses and are resolved from their upstream repositories.
+RELEGION 自有源码按 [MIT](LICENSE) 发布。依赖及衍生代码沿用各自的许可证。
 
-- [miuix](https://github.com/YuKongA/miuix), Apache-2.0; Compose UI library.
-- [AndroidX](https://github.com/androidx/androidx), Apache-2.0.
-- [Kotlin](https://github.com/JetBrains/kotlin) and
-  [kotlinx.coroutines](https://github.com/Kotlin/kotlinx.coroutines), Apache-2.0.
-- [Xposed API](https://api.xposed.info/), compile-only; implementation is supplied
-  by the user's framework, not bundled into this APK.
-- [Gradle Wrapper](https://github.com/gradle/gradle), Apache-2.0.
+## 互联适配
 
-This repository does not distribute Xiaomi/Lenovo firmware, proprietary system
-APKs, decompiled system code, private signing keys, or the user's device logs.
+`com.alyssum.relegion.hyperconnect` 由 HyperConnectToolkit v1.6.0 适配而来。主要改动为 RELEGION 命名空间、libxposed API 102 接入、按配置核对进程状态、部分安装回退、日志脱敏，以及独立的 miuix 界面。该部分仍按 Apache-2.0 分发。 [HyperConnectToolkit](https://github.com/silverpoetry/HyperConnectToolkit/tree/v1.6.0) · [Apache-2.0 全文](app/src/main/assets/licenses/HyperConnectToolkit-Apache-2.0.txt)
+
+## 构建依赖与设计参考
+
+- 界面使用 miuix、Compose 与 AndroidX。 [miuix](https://github.com/YuKongA/miuix) · [AndroidX](https://github.com/androidx/androidx)
+- Kotlin 与协程由 JetBrains 开发。 [Kotlin](https://github.com/JetBrains/kotlin) · [kotlinx.coroutines](https://github.com/Kotlin/kotlinx.coroutines)
+- Xposed 集成使用 libxposed API 和 Service API。 [libxposed API](https://github.com/libxposed/api) · [libxposed Service](https://github.com/libxposed/service)
+- 折叠侧栏和关于页参考 KernelSU 与 HyperCeiler 的布局。项目的 Compose 页面、动态背景和图标为独立实现。 [KernelSU](https://github.com/tiann/KernelSU) · [HyperCeiler](https://github.com/ReChronoRain/HyperCeiler)

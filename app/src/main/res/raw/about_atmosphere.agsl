@@ -1,0 +1,27 @@
+// RELEGION: independently authored soft, moving color fields.
+uniform float2 resolution;
+uniform float time;
+uniform float3 base;
+uniform float4 centers[4];
+uniform float3 palette[4];
+
+float glow(float2 position, float2 center, float2 extent) {
+    float2 delta = (position - center) / extent;
+    return exp(-dot(delta, delta) * 1.6);
+}
+
+half4 main(float2 pixel) {
+    float2 uv = pixel / max(resolution, float2(1.0));
+    float aspect = clamp(resolution.x / resolution.y, 0.55, 2.8);
+    float2 p = float2((uv.x - 0.5) * aspect, uv.y);
+    float t = time * 0.32;
+    p += 0.11 * float2(sin(p.y * 5.2 + t), cos(p.x * 4.8 - t * 0.8));
+    float a = glow(p, centers[0].xy, centers[0].zw);
+    float b = glow(p, centers[1].xy, centers[1].zw);
+    float c = glow(p, centers[2].xy, centers[2].zw);
+    float d = glow(p, centers[3].xy, centers[3].zw);
+    float3 clouds = (palette[0] * a + palette[1] * b + palette[2] * c + palette[3] * d) / max(a + b + c + d, 0.001);
+    float weight = clamp(0.54 + (a + b + c + d) * 0.19, 0.54, 0.9);
+    float grain = fract(sin(dot(pixel, float2(0.06711, 0.00584))) * 437.58) - 0.5;
+    return half4(clamp(mix(base, clouds, weight) + grain * 0.003, 0.0, 1.0), 1.0);
+}

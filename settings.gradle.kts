@@ -4,11 +4,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        exclusiveContent {
-            forRepository { maven { url = uri("https://api.xposed.info/") } }
-            filter { includeGroup("de.robv.android.xposed") }
-        }
+
     }
 }
-rootProject.name = "LenovoPenXposed"
+rootProject.name = "RELEGION"
 include(":app")

@@ -3,14 +3,14 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 android {
-    namespace = "io.github.myrom.lenovopen"
+    namespace = "com.alyssum.relegion"
     compileSdk = 37
     defaultConfig {
-        applicationId = "io.github.myrom.lenovopen"
+        applicationId = "com.alyssum.relegion"
         minSdk = 33
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 27
+        versionName = "1.0.8"
     }
     buildTypes {
         release { isMinifyEnabled = false }
@@ -29,20 +29,39 @@ dependencies {
     implementation("org.jetbrains.compose.foundation:foundation:1.11.1")
     implementation("org.jetbrains.compose.animation:animation:1.11.1")
     implementation("top.yukonga.miuix.kmp:miuix-ui:0.9.4")
-    compileOnly("de.robv.android.xposed:api:82")
+    implementation("top.yukonga.miuix.kmp:miuix-preference:0.9.4")
+    compileOnly("io.github.libxposed:api:102.0.0")
+    implementation("io.github.libxposed:service:102.0.0")
     testImplementation("junit:junit:4.13.2")
 }
 
 // Android variant unit-test tasks are not enabled by this AGP configuration.
 // Keep the pure policy checks runnable on any host without an Android device.
 val policyTestRuntime by configurations.creating
+val policyAndroidClasspath = androidComponents.sdkComponents.bootClasspath
 dependencies { add(policyTestRuntime.name, "junit:junit:4.13.2") }
 val compilePenPolicyTests by tasks.registering(JavaCompile::class) {
-    source("src/main/java/io/github/myrom/lenovopen/Protocol.java")
-    source("src/main/java/io/github/myrom/lenovopen/PenIdentity.java")
-    source("src/test/java/io/github/myrom/lenovopen/PenIdentityTest.java")
+    source("src/main/java/com/alyssum/relegion/Protocol.java")
+    source("src/main/java/com/alyssum/relegion/PenIdentity.java")
+    source("src/main/java/com/alyssum/relegion/PenBatteryCache.java")
+    source("src/main/java/com/alyssum/relegion/PenModel.java")
+    source("src/main/java/com/alyssum/relegion/PenActions.java")
+    source("src/main/java/com/alyssum/relegion/tablet/ModelNamePolicy.java")
+    source("src/main/java/com/alyssum/relegion/hook/GameRefreshPolicy.java")
+    source(fileTree("src/main/java/com/alyssum/relegion/hyperconnect/xposed") {
+        include("ChannelLimitPolicy.java", "HostBindingRepair.java", "NotificationClickSession.java",
+            "TargetProcess.java", "CompatibilityPolicy.java", "HookFeatureFlags.java")
+    })
+    source("src/main/java/com/alyssum/relegion/hyperconnect/config/FeaturePreferences.java")
+    source("src/test/java/com/alyssum/relegion/PenIdentityTest.java")
+    source("src/test/java/com/alyssum/relegion/PenBatteryCacheTest.java")
+    source("src/test/java/com/alyssum/relegion/PenModelTest.java")
+    source("src/test/java/com/alyssum/relegion/PenActionsTest.java")
+    source("src/test/java/com/alyssum/relegion/ModelNamePolicyTest.java")
+    source("src/test/java/com/alyssum/relegion/hook/GameRefreshPolicyTest.java")
+    source(fileTree("src/test/java/com/alyssum/relegion/hyperconnect") { include("**/*.java") })
     destinationDirectory.set(layout.buildDirectory.dir("policy-tests/classes"))
-    classpath = policyTestRuntime
+    classpath = policyTestRuntime + files(policyAndroidClasspath)
     options.encoding = "UTF-8"
     options.release.set(17)
 }

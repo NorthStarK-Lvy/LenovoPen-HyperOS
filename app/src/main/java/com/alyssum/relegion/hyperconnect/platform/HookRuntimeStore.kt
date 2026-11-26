@@ -1,0 +1,124 @@
+// Adapted from silverpoetry/HyperConnectToolkit v1.6.0 (Apache-2.0).
+// RELEGION: namespace, API 102 integration and activation evidence.
+package com.alyssum.relegion.hyperconnect.platform
+
+import android.content.Context
+import android.content.SharedPreferences
+import android.provider.Settings
+import androidx.core.content.edit
+import com.alyssum.relegion.BuildConfig
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+/**
+ * Durable source of truth for target-process Hook reports.
+ *
+ * Evidence is accepted only for the current APK version and Android boot. This prevents a report
+ * from a previous module build or previous boot from being presented as a currently loaded Hook.
+ */
+object HookRuntimeStore {
+    private val lock = Any()
+    private val mutableState = MutableStateFlow(HookRuntimeState())
+    val state: StateFlow<HookRuntimeState> = mutableState.asStateFlow()
+
+    private lateinit var preferences: SharedPreferences
+    private var bootCount: Int = INVALID_BOOT_COUNT
+
+    private val preferenceListener =
+        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key in STATUS_KEYS) publishCurrentState()
+        }
+
+    fun initialize(context: Context) {
+        synchronized(lock) {
+            if (::preferences.isInitialized) return
+            val deviceContext = context.createDeviceProtectedStorageContext()
+            bootCount = Settings.Global.getInt(
+                deviceContext.contentResolver,
+                Settings.Global.BOOT_COUNT,
+                INVALID_BOOT_COUNT,
+            )
+            preferences = deviceContext.getSharedPreferences(
+                PREFERENCES_NAME,
+                Context.MODE_PRIVATE,
+            )
+            preferences.registerOnSharedPreferenceChangeListener(preferenceListener)
+            mutableState.value = readLocked()
+        }
+    }
+
+    fun recordReportedCapabilities(context: Context, capabilityMask: Int, snapshot: Int) {
+        initialize(context)
+        val sanitizedMask = capabilityMask and HookStatusContract.ALL_REPORT_BITS
+        if (sanitizedMask == 0 || bootCount == INVALID_BOOT_COUNT) return
+
+        synchronized(lock) {
+            val previousMask = if (preferences.getInt(KEY_CONFIG_SNAPSHOT, -1) == snapshot) readReportedMaskLocked() else 0
+            preferences.edit(commit = true) {
+                putInt(KEY_VERSION_CODE, BuildConfig.VERSION_CODE)
+                putInt(KEY_BOOT_COUNT, bootCount)
+                putInt(KEY_CONFIG_SNAPSHOT, snapshot)
+                putInt(
+                    KEY_REPORTED_CAPABILITIES,
+                    mergeReportedCapabilities(previousMask, sanitizedMask),
+                )
+                putLong(KEY_REPORTED_AT, System.currentTimeMillis())
+            }
+            mutableState.value = readLocked()
+        }
+    }
+
+    /** Clears positive evidence after both scoped target packages have been force-stopped. */
+    fun clear(context: Context) {
+        initialize(context)
+        synchronized(lock) {
+            preferences.edit(commit = true) { clear() }
+            mutableState.value = HookRuntimeState()
+        }
+    }
+
+    private fun publishCurrentState() {
+        synchronized(lock) {
+            if (::preferences.isInitialized) mutableState.value = readLocked()
+        }
+    }
+
+    private fun readLocked(): HookRuntimeState {
+        return HookRuntimeState.fromMask(readReportedMaskLocked()).copy(
+            configSnapshot = preferences.getInt(KEY_CONFIG_SNAPSHOT, -1),
+        )
+    }
+
+    private fun readReportedMaskLocked(): Int {
+        if (!::preferences.isInitialized || bootCount == INVALID_BOOT_COUNT) {
+            return 0
+        }
+        if (
+            preferences.getInt(KEY_VERSION_CODE, 0) != BuildConfig.VERSION_CODE ||
+            preferences.getInt(KEY_BOOT_COUNT, INVALID_BOOT_COUNT) != bootCount
+        ) {
+            return 0
+        }
+        return preferences.getInt(KEY_REPORTED_CAPABILITIES, 0) and
+            HookStatusContract.ALL_REPORT_BITS
+    }
+
+    private const val PREFERENCES_NAME = "hook_runtime_status"
+    private const val KEY_VERSION_CODE = "version_code"
+    private const val KEY_CONFIG_SNAPSHOT = "config_snapshot"
+    private const val KEY_BOOT_COUNT = "boot_count"
+    private const val KEY_REPORTED_CAPABILITIES = "reported_capabilities"
+    private const val KEY_REPORTED_AT = "reported_at"
+    private const val INVALID_BOOT_COUNT = -1
+
+    private val STATUS_KEYS = setOf(
+        KEY_VERSION_CODE,
+        KEY_CONFIG_SNAPSHOT,
+        KEY_BOOT_COUNT,
+        KEY_REPORTED_CAPABILITIES,
+    )
+
+    internal fun mergeReportedCapabilities(previous: Int, incoming: Int): Int =
+        (previous or incoming) and HookStatusContract.ALL_REPORT_BITS
+}
