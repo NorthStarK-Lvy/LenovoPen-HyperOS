@@ -9,8 +9,8 @@ android {
         applicationId = "com.alyssum.relegion"
         minSdk = 33
         targetSdk = 35
-        versionCode = 27
-        versionName = "1.0.8"
+        versionCode = 34
+        versionName = "1.3.2"
     }
     buildTypes {
         release { isMinifyEnabled = false }
@@ -30,6 +30,7 @@ dependencies {
     implementation("org.jetbrains.compose.animation:animation:1.11.1")
     implementation("top.yukonga.miuix.kmp:miuix-ui:0.9.4")
     implementation("top.yukonga.miuix.kmp:miuix-preference:0.9.4")
+    implementation("no.nordicsemi.android:dfu:2.11.0")
     compileOnly("io.github.libxposed:api:102.0.0")
     implementation("io.github.libxposed:service:102.0.0")
     testImplementation("junit:junit:4.13.2")
@@ -39,13 +40,19 @@ dependencies {
 // Keep the pure policy checks runnable on any host without an Android device.
 val policyTestRuntime by configurations.creating
 val policyAndroidClasspath = androidComponents.sdkComponents.bootClasspath
-dependencies { add(policyTestRuntime.name, "junit:junit:4.13.2") }
+dependencies {
+    add(policyTestRuntime.name, "junit:junit:4.13.2")
+    add(policyTestRuntime.name, "org.json:json:20240303")
+}
 val compilePenPolicyTests by tasks.registering(JavaCompile::class) {
     source("src/main/java/com/alyssum/relegion/Protocol.java")
     source("src/main/java/com/alyssum/relegion/PenIdentity.java")
     source("src/main/java/com/alyssum/relegion/PenBatteryCache.java")
     source("src/main/java/com/alyssum/relegion/PenModel.java")
     source("src/main/java/com/alyssum/relegion/PenActions.java")
+    source("src/main/java/com/alyssum/relegion/LenovoFirmwareClient.java")
+    source("src/main/java/com/alyssum/relegion/LenovoFirmwarePackage.java")
+    source("src/main/java/com/alyssum/relegion/LogLevel.java")
     source("src/main/java/com/alyssum/relegion/tablet/ModelNamePolicy.java")
     source("src/main/java/com/alyssum/relegion/hook/GameRefreshPolicy.java")
     source(fileTree("src/main/java/com/alyssum/relegion/hyperconnect/xposed") {
@@ -57,6 +64,9 @@ val compilePenPolicyTests by tasks.registering(JavaCompile::class) {
     source("src/test/java/com/alyssum/relegion/PenBatteryCacheTest.java")
     source("src/test/java/com/alyssum/relegion/PenModelTest.java")
     source("src/test/java/com/alyssum/relegion/PenActionsTest.java")
+    source("src/test/java/com/alyssum/relegion/LenovoFirmwareClientTest.java")
+    source("src/test/java/com/alyssum/relegion/LenovoFirmwarePackageTest.java")
+    source("src/test/java/com/alyssum/relegion/LogLevelTest.java")
     source("src/test/java/com/alyssum/relegion/ModelNamePolicyTest.java")
     source("src/test/java/com/alyssum/relegion/hook/GameRefreshPolicyTest.java")
     source(fileTree("src/test/java/com/alyssum/relegion/hyperconnect") { include("**/*.java") })

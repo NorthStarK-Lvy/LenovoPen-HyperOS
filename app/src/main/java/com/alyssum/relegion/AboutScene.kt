@@ -9,7 +9,7 @@ import android.util.Log
 internal class AboutScene(context: Context) {
     var shader = runCatching {
         RuntimeShader(context.resources.openRawResource(R.raw.about_atmosphere).bufferedReader().use { it.readText() })
-    }.onFailure { Log.w("RELEGION", "About shader unavailable", it) }.getOrNull()
+    }.onFailure { DiagnosticLog.write(Log.WARN, "RELEGION", "About shader unavailable", it) }.getOrNull()
         private set
     private val listeners = linkedSetOf<() -> Unit>()
     val field = AboutColorField()
@@ -60,7 +60,7 @@ internal class AboutScene(context: Context) {
                 setFloatUniform("palette", field.colors)
             }
         } catch (error: IllegalArgumentException) {
-            Log.w("RELEGION", "About viewport material unavailable; using gradient", error)
+            DiagnosticLog.write(Log.WARN, "RELEGION", "About viewport material unavailable; using gradient", error)
             shader = null
         }
     }

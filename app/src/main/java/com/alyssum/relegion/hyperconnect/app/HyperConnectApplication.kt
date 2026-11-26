@@ -9,6 +9,8 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.os.UserManager
+import com.alyssum.relegion.DiagnosticLog
+import com.alyssum.relegion.LogLevel
 import com.alyssum.relegion.hyperconnect.config.FeaturePreferences
 import com.alyssum.relegion.hyperconnect.config.FeatureSettingsStore
 import com.alyssum.relegion.hyperconnect.platform.HookRuntimeStore
@@ -41,6 +43,7 @@ class HyperConnectApplication : Application(), XposedServiceHelper.OnServiceList
 
     override fun onCreate() {
         super.onCreate()
+        DiagnosticLog.initialize(this)
         HookRuntimeStore.initialize(this)
         val userManager = getSystemService(UserManager::class.java)
         if (userManager.isUserUnlocked) {
@@ -63,6 +66,7 @@ class HyperConnectApplication : Application(), XposedServiceHelper.OnServiceList
 
     override fun onServiceBind(boundService: XposedService) {
         service = boundService
+        DiagnosticLog.bindRemote(runCatching { boundService.getRemotePreferences(LogLevel.GROUP) }.getOrNull())
         GameRefreshSettingsStore.bindRemote(
             runCatching { boundService.getRemotePreferences(GameRefreshPreferences.GROUP) }.getOrNull(),
         )
@@ -84,6 +88,7 @@ class HyperConnectApplication : Application(), XposedServiceHelper.OnServiceList
     override fun onServiceDied(deadService: XposedService) {
         if (service !== deadService) return
         service = null
+        DiagnosticLog.bindRemote(null)
         GameRefreshSettingsStore.bindRemote(null)
         val preferences = remotePreferences
         remotePreferences = null

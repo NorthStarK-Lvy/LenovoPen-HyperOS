@@ -24,6 +24,6 @@ final class GameDefaultFrameRateHook {
         api.deoptimize(toggle);
         api.deoptimize(movedToTop);
         api.hook(getter).intercept(chain -> GameRefreshPolicy.gameDefaultRate((Float) chain.proceed()));
-        api.log(Log.INFO, "RELEGION", "GameManager generic 60 FPS default hook installed");
+        HookLog.write(api, Log.INFO, "RELEGION", "GameManager generic 60 FPS default hook installed");
     }
 }

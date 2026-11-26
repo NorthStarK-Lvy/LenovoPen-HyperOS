@@ -2,6 +2,8 @@
 // RELEGION: namespace, API 102 integration and activation evidence.
 package com.alyssum.relegion.hyperconnect.xposed;
 
+import com.alyssum.relegion.hook.HookLog;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
@@ -64,18 +66,18 @@ final class PortraitStreamingHooks {
                 Object[] args = chain.getArgs().toArray();
                 args[2] = height;
                 args[3] = width;
-                module.log(Log.INFO, TAG,
+                HookLog.write(module, Log.INFO, TAG,
                         "Restored portrait PIN_APP bounds: "
                                 + width + "x" + height + " -> " + height + "x" + width);
                 return chain.proceed(args);
             });
 
             geometryInstalled = true;
-            module.log(Log.INFO, TAG, "Installed initial app-screen geometry hook");
+            HookLog.write(module, Log.INFO, TAG, "Installed initial app-screen geometry hook");
             return true;
         } catch (Throwable error) {
             hooks.close();
-            module.log(Log.ERROR, TAG, "Initial app-screen geometry hook is incompatible", error);
+            HookLog.write(module, Log.ERROR, TAG, "Initial app-screen geometry hook is incompatible", error);
             return false;
         }
     }
@@ -106,12 +108,12 @@ final class PortraitStreamingHooks {
 
             orientationInstalled = true;
             hooks.commit();
-            module.log(Log.INFO, TAG, "Installed scoped sink-orientation hook");
+            HookLog.write(module, Log.INFO, TAG, "Installed scoped sink-orientation hook");
             return true;
         } catch (Throwable error) {
             hooks.close();
             geometryInstalled = false;
-            module.log(Log.ERROR, TAG, "Sink-orientation hook is incompatible", error);
+            HookLog.write(module, Log.ERROR, TAG, "Sink-orientation hook is incompatible", error);
             return false;
         }
     }
@@ -126,7 +128,7 @@ final class PortraitStreamingHooks {
             Resources resources = context != null ? context.getResources() : Resources.getSystem();
             return resources.getConfiguration().orientation;
         } catch (Throwable error) {
-            module.log(Log.WARN, TAG, "Could not read Xiaomi Mirror orientation", error);
+            HookLog.write(module, Log.WARN, TAG, "Could not read Xiaomi Mirror orientation", error);
             return Configuration.ORIENTATION_UNDEFINED;
         }
     }

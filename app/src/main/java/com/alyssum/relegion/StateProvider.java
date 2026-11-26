@@ -52,10 +52,12 @@ public final class StateProvider extends ContentProvider {
         safe.putString("device", extras.getString("device", ""));
         safe.putLong("batterySampled", extras.getLong("batterySampled"));
         safe.putString("error", extras.getString("error", ""));
-        for (String key : new String[]{"serial", "version", "firmware", "hardware", "penModel", "model", "clickAction", "openPackage"}) {
+        for (String key : new String[]{"serial", "version", "firmware", "hardware", "penModel", "model",
+                "bluetoothName", "otaSerial", "clickAction", "openPackage"}) {
             String value = extras.getString(key, "");
             safe.putString(key, value.substring(0, Math.min(value.length(), 120)));
         }
+        safe.putBoolean("otaInfoReady", online && extras.getBoolean("otaInfoReady"));
         safe.putInt("officialBattery", extras.getInt("officialBattery", -1));
         safe.putBoolean("charging", extras.getBoolean("charging"));
         safe.putBoolean("attached", extras.getBoolean("attached"));

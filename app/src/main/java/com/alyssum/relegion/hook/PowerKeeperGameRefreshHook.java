@@ -35,7 +35,7 @@ final class PowerKeeperGameRefreshHook {
                 if (controller[0].owner == handler) profile = controller[0].prepare(chain.getArg(0));
             } catch (ReflectiveOperationException | RuntimeException e) {
                 unavailable[0] = true;
-                api.log(Log.WARN, "RELEGION", "Game refresh preparation failed; using stock policy", e);
+                HookLog.write(api, Log.WARN, "RELEGION", "Game refresh preparation failed; using stock policy", e);
             }
 
             try {
@@ -44,7 +44,7 @@ final class PowerKeeperGameRefreshHook {
                 if (profile != null) profile.close();
             }
         });
-        api.log(Log.INFO, "RELEGION", "Event-driven PowerKeeper game profile hook installed");
+        HookLog.write(api, Log.INFO, "RELEGION", "Event-driven PowerKeeper game profile hook installed");
     }
 
     private static final class Host {
@@ -131,7 +131,7 @@ final class PowerKeeperGameRefreshHook {
                     : GameRefreshPolicy.Profile.open(profiles, pkg, target);
             if (profile == null) target = 0;
             if (target != lastTarget) {
-                api.log(Log.INFO, "RELEGION", "Game profile " + pkg + ": "
+                HookLog.write(api, Log.INFO, "RELEGION", "Game profile " + pkg + ": "
                         + (target == 0 ? "stock" : target + " Hz"));
             }
             lastTarget = target;
@@ -169,7 +169,7 @@ final class PowerKeeperGameRefreshHook {
                 } catch (ReflectiveOperationException | RuntimeException e) {
                     if (!warned) {
                         warned = true;
-                        api.log(Log.WARN, "RELEGION", "Game refresh event failed; keeping native policy", e);
+                        HookLog.write(api, Log.WARN, "RELEGION", "Game refresh event failed; keeping native policy", e);
                     }
                 }
             })) refreshQueued = false;

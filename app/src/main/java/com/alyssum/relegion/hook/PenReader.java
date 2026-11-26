@@ -167,12 +167,22 @@ final class PenReader {
                 if (enabled && connected(device)) { candidate = device; break; }
             }
             if (candidate == null) return state;
-            lastAddress = candidate.getAddress();
+            String address = candidate.getAddress();
+            if (!address.equals(lastAddress)) {
+                finishInfo("pen changed");
+                lastAddress = address;
+                lastFirmware = lastSerial = lastHardware = lastModel = "";
+                gattBattery = -1;
+                infoDone = false;
+                attempts = 0;
+                lastAttempt = 0;
+            }
             Object alias = cached(candidate, "getAlias");
             String remoteName = candidate.getName();
             lastName = alias instanceof String && !((String) alias).trim().isEmpty() ? ((String) alias).trim()
                     : remoteName != null && !remoteName.trim().isEmpty() ? remoteName.trim() : "手写笔";
             state.putString("name", lastName);
+            state.putString("bluetoothName", remoteName == null ? "" : remoteName);
             // The alias is user-editable, so the family comes from the HID product id or the bonded name.
             if (inputProduct != 0) lastModel = PenModel.fromProduct(inputProduct);
             else if (lastModel.isEmpty()) lastModel = PenModel.fromName(remoteName);
@@ -180,10 +190,13 @@ final class PenReader {
             state.putString("firmware", lastFirmware);
             state.putString("version", lastFirmware);
             state.putString("serial", lastSerial);
+            // The OTA identity must stay bound to this GATT address even if a legacy broadcast supplies a serial.
+            state.putString("otaSerial", lastSerial);
             state.putString("hardware", lastHardware);
             state.putBoolean("paired", true);
             boolean online = enabled && connected(candidate);
             state.putBoolean("connected", online);
+            state.putBoolean("otaInfoReady", online && infoDone);
             Object level = online ? cached(candidate, "getBatteryLevel") : null;
             int reported = level instanceof Integer ? (Integer) level : -1;
             // The stack's cached level is preferred; the pen's own 2A19 read is the fallback.

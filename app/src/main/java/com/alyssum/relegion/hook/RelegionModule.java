@@ -17,8 +17,9 @@ public final class RelegionModule extends XposedModule {
     private HyperConnectHooks hyperConnect;
     @Override public void onModuleLoaded(ModuleLoadedParam param) {
         processName = param.getProcessName();
+        HookLog.initialize(this);
         hyperConnect = new HyperConnectHooks(this);
-        log(Log.INFO, "RELEGION", "API 102 loaded in " + processName);
+        HookLog.write(this, Log.INFO, "RELEGION", "API 102 loaded in " + processName);
     }
     @Override public void onPackageLoaded(PackageLoadedParam param) {
         if (param.isFirstPackage() && PowerKeeperGameRefreshHook.PACKAGE.equals(processName)
@@ -26,7 +27,7 @@ public final class RelegionModule extends XposedModule {
             try {
                 PowerKeeperGameRefreshHook.install(this, param.getDefaultClassLoader());
             } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
-                log(Log.WARN, "RELEGION", "PowerKeeper game profile unavailable", e);
+                HookLog.write(this, Log.WARN, "RELEGION", "PowerKeeper game profile unavailable", e);
             }
         }
         hyperConnect.onPackageLoaded(param, processName);
@@ -37,13 +38,13 @@ public final class RelegionModule extends XposedModule {
         if (gameRefreshEnabled()) {
             try { GameDefaultFrameRateHook.install(this, param.getClassLoader()); }
             catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
-                log(Log.WARN, "RELEGION", "GameManager default-rate hook unavailable", e);
+                HookLog.write(this, Log.WARN, "RELEGION", "GameManager default-rate hook unavailable", e);
             }
         }
         if (BuildConfig.DEBUG) {
             try { RefreshRateProbe.install(this, param.getClassLoader()); }
             catch (ReflectiveOperationException | RuntimeException e) {
-                log(Log.ERROR, "RELEGION", "RefreshRateProbe unavailable", e);
+                HookLog.write(this, Log.ERROR, "RELEGION", "RefreshRateProbe unavailable", e);
             }
         }
     }
@@ -52,7 +53,7 @@ public final class RelegionModule extends XposedModule {
         try {
             return GameRefreshPreferences.isEnabled(getRemotePreferences(GameRefreshPreferences.GROUP));
         } catch (RuntimeException e) {
-            log(Log.WARN, "RELEGION", "Could not read game refresh setting; keeping stock policy", e);
+            HookLog.write(this, Log.WARN, "RELEGION", "Could not read game refresh setting; keeping stock policy", e);
             return false;
         }
     }
@@ -69,7 +70,7 @@ public final class RelegionModule extends XposedModule {
                     penProtocolInstalled = true;
                 }
             } catch (ReflectiveOperationException | RuntimeException e) {
-                log(Log.ERROR, "RELEGION", "Lenovo pen protocol unavailable", e);
+                HookLog.write(this, Log.ERROR, "RELEGION", "Lenovo pen protocol unavailable", e);
             }
         }
         if (installed || !param.getPackageName().equals(processName)) return;
@@ -82,7 +83,7 @@ public final class RelegionModule extends XposedModule {
                 installed = true;
             }
         } catch (ReflectiveOperationException | RuntimeException e) {
-            log(Log.ERROR, "RELEGION", "Host layout is unsupported; leaving original behavior", e);
+            HookLog.write(this, Log.ERROR, "RELEGION", "Host layout is unsupported; leaving original behavior", e);
         }
     }
 }

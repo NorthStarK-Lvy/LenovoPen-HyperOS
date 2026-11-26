@@ -32,7 +32,7 @@ final class RefreshRateProbe {
                 return chain.proceed();
             });
         }
-        api.log(Log.INFO, "RELEGION", "RefreshRateProbe installed");
+        HookLog.write(api, Log.INFO, "RELEGION", "RefreshRateProbe installed");
     }
 
     private static void installPowerKeeperProbe(XposedModule api, ClassLoader loader) {
@@ -54,9 +54,9 @@ final class RefreshRateProbe {
                 }
                 return chain.proceed();
             });
-            api.log(Log.INFO, "RELEGION", "RefreshRateProbe PowerKeeper request hook installed");
+            HookLog.write(api, Log.INFO, "RELEGION", "RefreshRateProbe PowerKeeper request hook installed");
         } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
-            api.log(Log.WARN, "RELEGION", "RefreshRateProbe PowerKeeper request hook unavailable", e);
+            HookLog.write(api, Log.WARN, "RELEGION", "RefreshRateProbe PowerKeeper request hook unavailable", e);
         }
     }
 
@@ -74,9 +74,9 @@ final class RefreshRateProbe {
                 }
                 return chain.proceed();
             });
-            api.log(Log.INFO, "RELEGION", "RefreshRateProbe game display hook installed");
+            HookLog.write(api, Log.INFO, "RELEGION", "RefreshRateProbe game display hook installed");
         } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
-            api.log(Log.WARN, "RELEGION", "RefreshRateProbe game display hook unavailable", e);
+            HookLog.write(api, Log.WARN, "RELEGION", "RefreshRateProbe game display hook unavailable", e);
         }
     }
 
@@ -91,6 +91,6 @@ final class RefreshRateProbe {
                     .append(':').append(frame.getLineNumber());
             if (trace.length() > 1600) break;
         }
-        api.log(Log.INFO, "RELEGION", trace.toString());
+        HookLog.write(api, Log.INFO, "RELEGION", trace.toString());
     }
 }

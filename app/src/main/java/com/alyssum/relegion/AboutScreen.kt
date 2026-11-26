@@ -33,12 +33,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.alyssum.relegion.tablet.ModelSettingsStore
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
 
@@ -68,33 +65,8 @@ internal fun AboutBackdrop(scene: AboutScene, active: Boolean, modifier: Modifie
 }
 
 @Composable
-internal fun AboutScreen(scene: AboutScene, scroll: ScrollState, headerHeight: Dp, motion: Boolean, onMotionChanged: (Boolean) -> Unit) {
-    var showModel by rememberSaveable { mutableStateOf(false) }
+internal fun AboutScreen(scene: AboutScene, scroll: ScrollState, headerHeight: Dp) {
     var showCredits by rememberSaveable { mutableStateOf(false) }
-    val model by ModelSettingsStore.configuration.collectAsStateWithLifecycle()
-    val preferences: @Composable () -> Unit = {
-        AboutGroup("偏好设置") {
-            ArrowPreference(
-                title = "关于平板机型",
-                summary = model.name.ifEmpty { "跟随系统" },
-                onClick = { showModel = true },
-            )
-            SwitchPreference(
-                title = "动态背景",
-                summary = "仅在关于页播放",
-                checked = motion,
-                onCheckedChange = onMotionChanged,
-            )
-        }
-    }
-    val project: @Composable () -> Unit = {
-        AboutGroup("项目与支持") {
-            AboutLink("源码仓库", "LenovoPen-HyperOS", PROJECT)
-            AboutLink("问题反馈", null, "$PROJECT/issues")
-            AboutLink("开发者", "NorthStarK-Lvy", "https://github.com/NorthStarK-Lvy")
-            ArrowPreference(title = "开源许可与致谢", onClick = { showCredits = true })
-        }
-    }
 
     Column(
         Modifier.fillMaxSize().verticalScroll(scroll).padding(bottom = 28.dp),
@@ -112,28 +84,15 @@ internal fun AboutScreen(scene: AboutScene, scroll: ScrollState, headerHeight: D
                     AboutFact("构建号", BuildConfig.VERSION_CODE.toString(), Modifier.weight(1f))
                 }
             }
-            BoxWithConstraints(Modifier.fillMaxWidth()) {
-                if (maxWidth >= 620.dp) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Box(Modifier.weight(1f)) { project() }
-                        Box(Modifier.weight(1f)) { preferences() }
-                    }
-                } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                        project()
-                        preferences()
-                    }
-                }
+            AboutGroup("项目与支持") {
+                AboutLink("源码仓库", "LenovoPen-HyperOS", PROJECT)
+                AboutLink("问题反馈", null, "$PROJECT/issues")
+                AboutLink("开发者", "NorthStarK-Lvy", "https://github.com/NorthStarK-Lvy")
+                ArrowPreference(title = "开源许可与致谢", onClick = { showCredits = true })
             }
         }
     }
 
-    WindowDialog(show = showModel, title = "关于平板机型", onDismissRequest = { showModel = false }) {
-        Column(Modifier.fillMaxWidth().heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
-            TabletModelEditor()
-            TextButton("关闭", modifier = Modifier.align(Alignment.End), onClick = { showModel = false })
-        }
-    }
     WindowDialog(show = showCredits, title = "开源许可与致谢", onDismissRequest = { showCredits = false }) {
         Column(Modifier.fillMaxWidth().heightIn(max = 360.dp)) {
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {

@@ -24,7 +24,8 @@ public final class PenModel {
     public static String fromName(String name) {
         if (name == null) return UNKNOWN;
         switch (name.trim()) {
-            case "Lenovo Tab Pen Plus": return PICASSO;
+            case "Lenovo Tab Pen Plus":
+            case "PICASSO": return PICASSO;
             case "Lenovo Tab Pen Pro":
             case "Lenovo Tab Pen Pro 2": return PARKER;
             case "Lenovo Precision Pen":
@@ -45,4 +46,3 @@ public final class PenModel {
     public static boolean hasHapticFeedback(String model) { return PARKER.equals(model); }
     public static boolean hasDualTapKeys(String model) { return PARKER.equals(model); }
 }
-

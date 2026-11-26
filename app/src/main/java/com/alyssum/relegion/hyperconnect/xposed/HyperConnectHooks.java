@@ -2,6 +2,8 @@
 // RELEGION: single API 102 entry, configuration-matched activation reports.
 package com.alyssum.relegion.hyperconnect.xposed;
 
+import com.alyssum.relegion.hook.HookLog;
+
 import android.app.Application;
 import android.content.SharedPreferences;
 import android.util.Log;
@@ -39,7 +41,7 @@ public final class HyperConnectHooks {
         HookFeatureFlags features = readFeatureFlags();
         snapshot = FeaturePreferences.snapshot(features.crossDeviceNotification,
                 features.portraitStreaming, features.miLinkMultiChannel);
-        module.log(Log.INFO, TAG,
+        HookLog.write(module, Log.INFO, TAG,
                 "Feature snapshot for " + target.processName
                         + ": notification=" + features.crossDeviceNotification
                         + ", portrait=" + features.portraitStreaming
@@ -83,7 +85,7 @@ public final class HyperConnectHooks {
             HookFeatureFlags features) {
         if (!features.crossDeviceNotification) return;
         if (!isTablet(classLoader)) {
-            module.log(Log.INFO, TAG, "Skipped tablet notification compatibility on a phone");
+            HookLog.write(module, Log.INFO, TAG, "Skipped tablet notification compatibility on a phone");
             return;
         }
 
@@ -99,7 +101,7 @@ public final class HyperConnectHooks {
             HookFeatureFlags features) {
         if (!features.crossDeviceNotification) return;
         if (!isTablet(classLoader)) {
-            module.log(Log.INFO, TAG, "Skipped tablet notification compatibility on a phone");
+            HookLog.write(module, Log.INFO, TAG, "Skipped tablet notification compatibility on a phone");
             return;
         }
 
@@ -126,7 +128,7 @@ public final class HyperConnectHooks {
             HookFeatureFlags features) {
         if (!features.portraitStreaming) return;
         if (!isTablet(classLoader)) {
-            module.log(Log.INFO, TAG, "Skipped tablet portrait compatibility on a phone");
+            HookLog.write(module, Log.INFO, TAG, "Skipped tablet portrait compatibility on a phone");
             return;
         }
 
@@ -161,7 +163,7 @@ public final class HyperConnectHooks {
             SharedPreferences preferences = module.getRemotePreferences(FeaturePreferences.GROUP);
             return HookFeatureFlags.read(preferences);
         } catch (Throwable error) {
-            module.log(Log.ERROR, TAG,
+            HookLog.write(module, Log.ERROR, TAG,
                     "Remote configuration unavailable; skipped all functional hooks",
                     error);
             return HookFeatureFlags.disabled();
@@ -172,7 +174,7 @@ public final class HyperConnectHooks {
         try {
             return DeviceFormFactor.isTablet(classLoader);
         } catch (Throwable error) {
-            module.log(Log.WARN, TAG, "Could not read HyperOS tablet form factor", error);
+            HookLog.write(module, Log.WARN, TAG, "Could not read HyperOS tablet form factor", error);
             return false;
         }
     }

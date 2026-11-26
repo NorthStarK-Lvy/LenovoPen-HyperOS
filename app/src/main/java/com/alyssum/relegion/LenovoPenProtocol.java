@@ -1,5 +1,7 @@
 package com.alyssum.relegion;
 
+import com.alyssum.relegion.hook.HookLog;
+
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -36,8 +38,8 @@ public final class LenovoPenProtocol {
                 @Override public void onReceive(Context c, Intent intent) { receive(c, intent); }
             }, filter(), null, null, Context.RECEIVER_EXPORTED);
             registered = true;
-            api.log(Log.INFO, "RELEGION", "Lenovo pen protocol receiver installed");
-        } catch (RuntimeException e) { api.log(Log.ERROR, "RELEGION", "Pen protocol receiver failed", e); }
+            HookLog.write(api, Log.INFO, "RELEGION", "Lenovo pen protocol receiver installed");
+        } catch (RuntimeException e) { HookLog.write(api, Log.ERROR, "RELEGION", "Pen protocol receiver failed", e); }
     }
     private static android.content.IntentFilter filter() {
         android.content.IntentFilter f = new android.content.IntentFilter();

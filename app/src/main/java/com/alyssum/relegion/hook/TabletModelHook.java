@@ -70,7 +70,7 @@ final class TabletModelHook {
         });
         preferencesListener(hook);
         module.deoptimize(bind);
-        module.log(Log.INFO, "RELEGION", "About tablet model title hook installed (adapter=2, card=6)");
+        HookLog.write(module, Log.INFO, "RELEGION", "About tablet model title hook installed (adapter=2, card=6)");
     }
 
     private static void preferencesListener(TabletModelHook hook) {
@@ -91,7 +91,7 @@ final class TabletModelHook {
     }
 
     private void warn(Throwable error) {
-        if (!warned) { warned = true; module.log(Log.WARN, "RELEGION", "About tablet title update skipped", error); }
+        if (!warned) { warned = true; HookLog.write(module, Log.WARN, "RELEGION", "About tablet title update skipped", error); }
     }
 
     private static Field field(Class<?> type, String name) throws NoSuchFieldException {

@@ -11,4 +11,5 @@ RELEGION 自有源码按 [MIT](LICENSE) 发布。依赖及衍生代码沿用各�
 - 界面使用 miuix、Compose 与 AndroidX。 [miuix](https://github.com/YuKongA/miuix) · [AndroidX](https://github.com/androidx/androidx)
 - Kotlin 与协程由 JetBrains 开发。 [Kotlin](https://github.com/JetBrains/kotlin) · [kotlinx.coroutines](https://github.com/Kotlin/kotlinx.coroutines)
 - Xposed 集成使用 libxposed API 和 Service API。 [libxposed API](https://github.com/libxposed/api) · [libxposed Service](https://github.com/libxposed/service)
+- 蓝牙固件传输使用 Nordic Android DFU 库，采用 BSD-3-Clause 许可。 [Nordic Android DFU](https://github.com/NordicSemiconductor/Android-DFU-Library) · [许可证全文](app/src/main/assets/licenses/Nordic-Android-DFU-BSD-3-Clause.txt)
 - 折叠侧栏和关于页参考 KernelSU 与 HyperCeiler 的布局。项目的 Compose 页面、动态背景和图标为独立实现。 [KernelSU](https://github.com/tiann/KernelSU) · [HyperCeiler](https://github.com/ReChronoRain/HyperCeiler)

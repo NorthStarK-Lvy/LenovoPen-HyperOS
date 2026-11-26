@@ -224,4 +224,3 @@ private fun isInstalled(context: Context, packageName: String): Boolean = try {
     context.packageManager.getPackageInfo(packageName, 0)
     true
 } catch (_: PackageManager.NameNotFoundException) { false }
-

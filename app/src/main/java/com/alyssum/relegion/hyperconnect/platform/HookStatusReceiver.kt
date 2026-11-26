@@ -8,6 +8,7 @@ import android.content.Intent
 import android.util.Log
 import android.os.Build
 import android.os.UserManager
+import com.alyssum.relegion.DiagnosticLog
 import com.alyssum.relegion.hyperconnect.config.FeatureSettingsStore
 
 /** Receives activation evidence from a genuinely hooked target process. */
@@ -18,7 +19,7 @@ class HookStatusReceiver : BroadcastReceiver() {
 
         val senderUid = sentFromUid
         if (senderUid < 0) {
-            Log.w(TAG, "Rejected Hook report without sender identity")
+            DiagnosticLog.write(Log.WARN, TAG, "Rejected Hook report without sender identity")
             return
         }
         val senderPackages = context.packageManager
@@ -36,7 +37,7 @@ class HookStatusReceiver : BroadcastReceiver() {
             ),
         )
         if (report == null) {
-            Log.w(TAG, "Rejected invalid Hook report from uid=$senderUid")
+            DiagnosticLog.write(Log.WARN, TAG, "Rejected invalid Hook report from uid=$senderUid")
             return
         }
         val snapshot = intent.getIntExtra(HookStatusContract.EXTRA_CONFIG_SNAPSHOT, -1)
@@ -56,7 +57,8 @@ class HookStatusReceiver : BroadcastReceiver() {
             if (snapshot != FeatureSettingsStore.configuration.value.settings.snapshot) return
         }
         HookRuntimeStore.recordReportedCapabilities(context, report.featureMask, snapshot)
-        Log.i(
+        DiagnosticLog.write(
+            Log.INFO,
             TAG,
             "Recorded Hook capabilities=${report.featureMask} from ${report.target.processName}",
         )

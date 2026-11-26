@@ -36,9 +36,9 @@ final class LenovoPenKeyHook {
                 api.deoptimize(method);
                 INSTALLED.add(method);
             }
-            api.log(android.util.Log.INFO, "RELEGION", "Lenovo native pen-key hook installed=" + INSTALLED.size());
+            HookLog.write(api, android.util.Log.INFO, "RELEGION", "Lenovo native pen-key hook installed=" + INSTALLED.size());
         } catch (ReflectiveOperationException | RuntimeException e) {
-            api.log(android.util.Log.WARN, "RELEGION", "Lenovo native pen-key hook unavailable", e);
+            HookLog.write(api, android.util.Log.WARN, "RELEGION", "Lenovo native pen-key hook unavailable", e);
         }
     }
 
@@ -88,7 +88,7 @@ final class LenovoPenKeyHook {
             } else return;
             context.startActivity(intent);
         } catch (RuntimeException e) {
-            if (module != null) module.log(android.util.Log.WARN, "RELEGION", "Pen action failed", e);
+            if (module != null) HookLog.write(module, android.util.Log.WARN, "RELEGION", "Pen action failed", e);
         }
     }
 

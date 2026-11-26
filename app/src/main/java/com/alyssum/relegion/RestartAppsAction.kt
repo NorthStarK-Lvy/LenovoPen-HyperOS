@@ -33,7 +33,7 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
 
-private enum class RestartTarget(val label: String, val detail: String, val command: RootCommand) {
+internal enum class RestartTarget(val label: String, val detail: String, val command: RootCommand) {
     SETTINGS("设置", "关于平板机型", RootCommand.STOP_SETTINGS),
     PEN("系统功能组件", "手写笔设置", RootCommand.STOP_SECURITY_CORE),
     MILINK("小米互联服务", "通知与双通道", RootCommand.STOP_MILINK),
@@ -42,7 +42,7 @@ private enum class RestartTarget(val label: String, val detail: String, val comm
 
 /** Explicit user action only. No commands run while the dialog is merely shown. */
 @Composable
-internal fun RestartAppsAction(page: RelegionPage) {
+internal fun RestartAppsAction(vararg targets: RestartTarget) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val root = remember { RootShell() }
@@ -56,12 +56,7 @@ internal fun RestartAppsAction(page: RelegionPage) {
         (RestartTarget.SETTINGS !in selected || model.remoteAvailable && !model.pending)
 
     IconButton(onClick = {
-        selected = when (page) {
-            RelegionPage.PEN -> setOf(RestartTarget.PEN)
-            RelegionPage.INTERCONNECT -> setOf(RestartTarget.MILINK, RestartTarget.MIRROR)
-            RelegionPage.ABOUT -> setOf(RestartTarget.SETTINGS)
-            RelegionPage.GAME_REFRESH -> emptySet()
-        }
+        selected = targets.toSet()
         show = true
     }, enabled = !busy, modifier = Modifier.size(48.dp)) {
         Icon(ImageVector.vectorResource(R.drawable.ic_restart_apps), contentDescription = "重启应用",

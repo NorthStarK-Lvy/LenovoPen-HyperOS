@@ -19,8 +19,8 @@ public final class PenHook {
     private static Context appContext;
     private static XposedModule framework;
     private static boolean bridgeRegistered;
-    static void log(Throwable e) { framework.log(Log.ERROR, "RELEGION", "Pen hook", e); }
-    static void info(String message) { if (framework != null) framework.log(Log.INFO, "RELEGION", message); }
+    static void log(Throwable e) { HookLog.write(framework, Log.ERROR, "RELEGION", "Pen hook", e); }
+    static void info(String message) { if (framework != null) HookLog.write(framework, Log.INFO, "RELEGION", message); }
     public static Bundle read() {
         Bundle state = READER.read();
         try {
@@ -144,7 +144,7 @@ public final class PenHook {
             return chain.proceed();
         });
         api.hook(page.getDeclaredMethod("onDestroy")).intercept(chain -> { stop(chain.getThisObject(), true); return chain.proceed(); });
-        api.log(Log.INFO, "RELEGION", "Pen hooks installed via API 102");
+        HookLog.write(api, Log.INFO, "RELEGION", "Pen hooks installed via API 102");
     }
     private static void restrictUnsupported(Object page, Bundle state) {
         if (Reflect.getAdditionalInstanceField(page, MASK) == null) {

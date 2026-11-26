@@ -2,6 +2,8 @@
 // RELEGION: namespace, API 102 integration and activation evidence.
 package com.alyssum.relegion.hyperconnect.xposed;
 
+import com.alyssum.relegion.hook.HookLog;
+
 import android.util.Log;
 
 import java.lang.reflect.Constructor;
@@ -36,10 +38,10 @@ final class MiLinkMultiChannelHooks {
             installChannelPolicyHook(bindings);
             installHostBindingHook(bindings);
             hooks.commit();
-            module.log(Log.INFO, TAG, "Installed MiLink Multi-Channel hooks");
+            HookLog.write(module, Log.INFO, TAG, "Installed MiLink Multi-Channel hooks");
             return true;
         } catch (Throwable error) {
-            module.log(Log.ERROR, TAG, "MiLink Multi-Channel hooks are incompatible", error);
+            HookLog.write(module, Log.ERROR, TAG, "MiLink Multi-Channel hooks are incompatible", error);
             return false;
         }
     }
@@ -50,9 +52,9 @@ final class MiLinkMultiChannelHooks {
             ChannelLimitPolicy.Result policyResult =
                     ChannelLimitPolicy.ensureAndroidPadDualChannel(chain.getThisObject());
             if (policyResult == ChannelLimitPolicy.Result.UPDATED) {
-                module.log(Log.INFO, TAG, "MiLink AndroidPad channel limit set to 2");
+                HookLog.write(module, Log.INFO, TAG, "MiLink AndroidPad channel limit set to 2");
             } else if (policyResult == ChannelLimitPolicy.Result.UNSUPPORTED) {
-                module.log(Log.WARN, TAG, "MiLink channel policy layout is unsupported");
+                HookLog.write(module, Log.WARN, TAG, "MiLink channel policy layout is unsupported");
             }
             return result;
         });
@@ -75,11 +77,11 @@ final class MiLinkMultiChannelHooks {
             Object hostId = chain.getArg(0);
             try {
                 if (bindings.hostBinding.bind(hostId)) {
-                    module.log(Log.INFO, TAG, "MiLink official Host bind completed");
+                    HookLog.write(module, Log.INFO, TAG, "MiLink official Host bind completed");
                     return HostBindingRepair.SUCCESS;
                 }
             } catch (ReflectiveOperationException | RuntimeException error) {
-                module.log(Log.WARN, TAG, "MiLink official Host bind failed", error);
+                HookLog.write(module, Log.WARN, TAG, "MiLink official Host bind failed", error);
             }
             return result;
         });

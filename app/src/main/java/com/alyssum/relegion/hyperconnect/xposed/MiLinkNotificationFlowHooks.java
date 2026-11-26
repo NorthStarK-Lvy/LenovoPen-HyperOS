@@ -2,6 +2,8 @@
 // RELEGION: namespace, API 102 integration and activation evidence.
 package com.alyssum.relegion.hyperconnect.xposed;
 
+import com.alyssum.relegion.hook.HookLog;
+
 import android.content.Context;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -42,10 +44,10 @@ final class MiLinkNotificationFlowHooks {
             Bindings bindings = Bindings.resolve(classLoader);
             installHooks(bindings);
             hooks.commit();
-            module.log(Log.INFO, TAG, "Installed MiLink notification flow hooks");
+            HookLog.write(module, Log.INFO, TAG, "Installed MiLink notification flow hooks");
             return true;
         } catch (Throwable error) {
-            module.log(Log.ERROR, TAG,
+            HookLog.write(module, Log.ERROR, TAG,
                     "MiLink notification flow hooks are incompatible",
                     error);
             return false;
@@ -65,7 +67,7 @@ final class MiLinkNotificationFlowHooks {
                 packageName = (String) bindings.getPackageName.invoke(message);
             } catch (Throwable error) {
                 clickSession.clear();
-                module.log(Log.WARN, TAG,
+                HookLog.write(module, Log.WARN, TAG,
                         "Could not correlate the follow-up notification command",
                         error);
                 return chain.proceed();
@@ -79,7 +81,7 @@ final class MiLinkNotificationFlowHooks {
             }
 
             notifyPublishSuccess(chain.getArg(2), bindings.publishResult);
-            module.log(Log.INFO, TAG,
+            HookLog.write(module, Log.INFO, TAG,
                     "Consumed the duplicate passive notification stream request");
             return null;
         });
@@ -102,7 +104,7 @@ final class MiLinkNotificationFlowHooks {
                     bindings.relaySuccess,
                     bindings.relayFailure);
             if (dispatched) {
-                module.log(Log.INFO, TAG,
+                HookLog.write(module, Log.INFO, TAG,
                         "Notification click dispatched through the stock PIN_APP flow");
             }
             return null;
@@ -122,9 +124,9 @@ final class MiLinkNotificationFlowHooks {
             if (result != null) {
                 return true;
             }
-            module.log(Log.ERROR, TAG, "PIN_APP provider returned no result");
+            HookLog.write(module, Log.ERROR, TAG, "PIN_APP provider returned no result");
         } catch (Throwable error) {
-            module.log(Log.ERROR, TAG, "Could not dispatch notification through PIN_APP", error);
+            HookLog.write(module, Log.ERROR, TAG, "Could not dispatch notification through PIN_APP", error);
         }
         return false;
     }
@@ -142,7 +144,7 @@ final class MiLinkNotificationFlowHooks {
                 onFailure.invoke(callback, -1);
             }
         } catch (Throwable error) {
-            module.log(Log.WARN, TAG, "Could not report the PIN_APP dispatch result", error);
+            HookLog.write(module, Log.WARN, TAG, "Could not report the PIN_APP dispatch result", error);
         }
     }
 
@@ -151,7 +153,7 @@ final class MiLinkNotificationFlowHooks {
         try {
             onResult.invoke(callback, 1, null);
         } catch (Throwable error) {
-            module.log(Log.WARN, TAG,
+            HookLog.write(module, Log.WARN, TAG,
                     "Could not acknowledge the consumed notification command",
                     error);
         }

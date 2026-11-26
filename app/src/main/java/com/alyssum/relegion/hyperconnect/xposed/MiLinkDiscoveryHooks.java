@@ -2,6 +2,8 @@
 // RELEGION: namespace, API 102 integration and activation evidence.
 package com.alyssum.relegion.hyperconnect.xposed;
 
+import com.alyssum.relegion.hook.HookLog;
+
 import android.util.Log;
 
 import java.lang.reflect.Method;
@@ -31,10 +33,10 @@ final class MiLinkDiscoveryHooks {
             Bindings bindings = Bindings.resolve(classLoader);
             installHooks(bindings);
             hooks.commit();
-            module.log(Log.INFO, TAG, "Installed MiLink notification discovery hooks");
+            HookLog.write(module, Log.INFO, TAG, "Installed MiLink notification discovery hooks");
             return true;
         } catch (Throwable error) {
-            module.log(Log.ERROR, TAG,
+            HookLog.write(module, Log.ERROR, TAG,
                     "MiLink notification discovery hooks are incompatible",
                     error);
             return false;

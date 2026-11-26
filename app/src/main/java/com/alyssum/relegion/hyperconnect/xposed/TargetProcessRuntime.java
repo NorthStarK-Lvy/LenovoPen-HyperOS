@@ -2,6 +2,8 @@
 // RELEGION: namespace, API 102 integration and activation evidence.
 package com.alyssum.relegion.hyperconnect.xposed;
 
+import com.alyssum.relegion.hook.HookLog;
+
 import android.annotation.SuppressLint;
 import android.app.Application;
 import android.app.BroadcastOptions;
@@ -63,10 +65,10 @@ final class TargetProcessRuntime {
                 Object app = current.invoke(null);
                 if (app instanceof Application application) applicationContext = application;
             } catch (ReflectiveOperationException | RuntimeException ignored) { }
-            module.log(Log.INFO, TAG, "Installed target-process lifecycle reporter");
+            HookLog.write(module, Log.INFO, TAG, "Installed target-process lifecycle reporter");
             return true;
         } catch (Throwable error) {
-            module.log(Log.ERROR, TAG, "Target-process lifecycle reporter is incompatible", error);
+            HookLog.write(module, Log.ERROR, TAG, "Target-process lifecycle reporter is incompatible", error);
             return false;
         }
     }
@@ -102,10 +104,10 @@ final class TargetProcessRuntime {
             options.setShareIdentityEnabled(true);
             context.sendBroadcast(report, null, options.toBundle());
             reportedCapabilities |= pendingFeatures;
-            module.log(Log.INFO, TAG,
+            HookLog.write(module, Log.INFO, TAG,
                     "Reported Hook capabilities=" + pendingFeatures + " from " + sourceProcess);
         } catch (Throwable error) {
-            module.log(Log.WARN, TAG, "Could not report installed Hook features", error);
+            HookLog.write(module, Log.WARN, TAG, "Could not report installed Hook features", error);
         }
     }
 }

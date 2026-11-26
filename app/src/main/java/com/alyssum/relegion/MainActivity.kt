@@ -22,7 +22,13 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ScrollState
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -34,6 +40,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.NavigationRail
@@ -42,6 +49,7 @@ import top.yukonga.miuix.kmp.basic.NavigationRailValue
 import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
@@ -49,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -59,6 +68,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -108,6 +118,12 @@ internal enum class RelegionPage(val label: String, val icon: Int) {
     ABOUT("关于", R.drawable.ic_about),
 }
 
+private enum class DetailPage(val title: String) {
+    BUTTONS("笔按键设置"),
+    FIRMWARE("固件升级"),
+    SETTINGS("设置"),
+}
+
 @Composable
 private fun RelegionScreen(onOpenSettings: () -> Unit, onAllowBluetooth: () -> Unit, onAllowNotifications: () -> Unit) {
     val pages = RelegionPage.entries
@@ -125,9 +141,20 @@ private fun RelegionScreen(onOpenSettings: () -> Unit, onAllowBluetooth: () -> U
         preferences.edit().putBoolean("navigation_rail_expanded", railState.isExpanded).apply()
     }
     var aboutMotion by remember { mutableStateOf(preferences.getBoolean("about_motion", true)) }
-    var buttonPage by rememberSaveable { mutableStateOf(false) }
-    var penSnapshot by remember { mutableStateOf(StateProvider.peek()) }
-    BackHandler(enabled = buttonPage) { buttonPage = false }
+    val transfer by PenFirmwareTransfer.status.collectAsStateWithLifecycle()
+    var detailPage by rememberSaveable {
+        mutableStateOf<DetailPage?>(DetailPage.FIRMWARE.takeIf {
+            transfer.phase == PenFirmwareTransfer.Phase.FLASHING
+        })
+    }
+    val onPenPage = settledPage == RelegionPage.PEN && !pager.isScrollInProgress
+    val penSnapshot = rememberPenSnapshot(
+        transfer.phase != PenFirmwareTransfer.Phase.FLASHING &&
+            (detailPage == DetailPage.FIRMWARE || detailPage == null && onPenPage),
+        firmwarePage = detailPage == DetailPage.FIRMWARE,
+    )
+    BackHandler(enabled = detailPage != null) { detailPage = null }
+    val penScroll = rememberScrollState()
     val aboutScroll = rememberScrollState()
     val aboutHeaderHeight = 218.dp
     val headerPx = with(androidx.compose.ui.platform.LocalDensity.current) { aboutHeaderHeight.toPx() }
@@ -148,49 +175,92 @@ private fun RelegionScreen(onOpenSettings: () -> Unit, onAllowBluetooth: () -> U
         // One continuous background in window coordinates, independent of scrolling.
         AboutBackdrop(
             scene = aboutScene,
-            active = aboutMotion && settledPage == RelegionPage.ABOUT && !pager.isScrollInProgress,
+            active = aboutMotion && detailPage == null && settledPage == RelegionPage.ABOUT && !pager.isScrollInProgress,
             modifier = Modifier.matchParentSize().graphicsLayer { alpha = aboutBlend }
         )
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = { SmallTopAppBar(title = if (buttonPage) "笔按键设置" else "RELEGION", titlePadding = 24.dp,
-                navigationIcon = { if (buttonPage) IconButton(onClick = { buttonPage = false }, modifier = Modifier.size(48.dp)) {
-                    Text("‹", fontSize = 30.sp, color = MiuixTheme.colorScheme.onSurface) } },
-                actions = {
-                    if (!buttonPage && settledPage != RelegionPage.GAME_REFRESH) RestartAppsAction(settledPage)
-                },
-                color = MiuixTheme.colorScheme.surface.copy(alpha = 1f - aboutBlend),
-                titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = 1f - aboutBlend * (1f - titleProgress))) },
-            bottomBar = {
-                if (!rail && !buttonPage) NavigationBar(color = MiuixTheme.colorScheme.surface.copy(alpha = 1f - aboutBlend), showDivider = aboutBlend == 0f) {
-                    pages.forEachIndexed { index, page ->
-                        NavigationBarItem(selected = selected == index, onClick = { selectPage(index) },
-                            icon = ImageVector.vectorResource(page.icon), label = page.label)
+        AnimatedContent(
+            targetState = detailPage,
+            modifier = Modifier.fillMaxSize().clipToBounds(),
+            transitionSpec = {
+                val opening = targetState != null
+                val direction = if (opening) SlideDirection.Start else SlideDirection.End
+                // Miuix navigation moves the detail page a full width and the covered page a quarter width.
+                val easing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
+                val enter = slideIntoContainer(direction, tween(500, easing = easing)) { offset ->
+                    if (opening) offset else offset / 4
+                }
+                val exit = slideOutOfContainer(direction, tween(500, easing = easing)) { offset ->
+                    if (opening) offset / 4 else offset
+                }
+                val coveredEnter = if (opening) enter else enter + fadeIn(tween(500, easing = easing), initialAlpha = 0.9f)
+                val coveredExit = if (opening) exit + fadeOut(tween(500, easing = easing), targetAlpha = 0.9f) else exit
+                (coveredEnter togetherWith coveredExit).apply {
+                    targetContentZIndex = if (opening) 1f else 0f
+                }
+            },
+            label = "Detail page navigation",
+        ) { shownDetail ->
+            val topBarBlend = if (shownDetail == null) aboutBlend else 0f
+            Scaffold(
+                containerColor = if (shownDetail == null) Color.Transparent else MiuixTheme.colorScheme.surface,
+                topBar = { SmallTopAppBar(title = shownDetail?.title ?: "RELEGION", titlePadding = 24.dp,
+                    navigationIcon = { if (shownDetail != null) IconButton(onClick = { detailPage = null }, modifier = Modifier.size(48.dp)) {
+                        Text("‹", fontSize = 30.sp, color = MiuixTheme.colorScheme.onSurface) } },
+                    actions = {
+                        when {
+                            shownDetail == DetailPage.SETTINGS -> RestartAppsAction(RestartTarget.SETTINGS)
+                            shownDetail == null && settledPage == RelegionPage.PEN -> RestartAppsAction(RestartTarget.PEN)
+                            shownDetail == null && settledPage == RelegionPage.INTERCONNECT ->
+                                RestartAppsAction(RestartTarget.MILINK, RestartTarget.MIRROR)
+                        }
+                        if (shownDetail == null) IconButton(
+                            onClick = { if (detailPage == null) detailPage = DetailPage.SETTINGS },
+                            modifier = Modifier.size(48.dp),
+                        ) {
+                            Icon(ImageVector.vectorResource(R.drawable.ic_settings), contentDescription = "设置",
+                                tint = MiuixTheme.colorScheme.onSurface)
+                        }
+                    },
+                    color = MiuixTheme.colorScheme.surface.copy(alpha = 1f - topBarBlend),
+                    titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = 1f - topBarBlend * (1f - titleProgress))) },
+                bottomBar = {
+                    if (!rail && shownDetail == null) NavigationBar(color = MiuixTheme.colorScheme.surface.copy(alpha = 1f - aboutBlend), showDivider = aboutBlend == 0f) {
+                        pages.forEachIndexed { index, page ->
+                            NavigationBarItem(selected = selected == index, onClick = { selectPage(index) },
+                                icon = ImageVector.vectorResource(page.icon), label = page.label)
+                        }
                     }
                 }
-            }
-        ) { padding ->
-            Row(Modifier.fillMaxSize().padding(padding)) {
-                if (rail && !buttonPage) NavigationRail(state = railState, modifier = Modifier.fillMaxHeight(),
-                    expandContentDescription = "展开侧栏", collapseContentDescription = "收起侧栏",
-                    color = MiuixTheme.colorScheme.surface.copy(alpha = 1f - aboutBlend), showDivider = aboutBlend == 0f) {
-                    pages.forEachIndexed { index, page ->
-                        NavigationRailItem(selected = selected == index, onClick = { selectPage(index) },
-                            icon = ImageVector.vectorResource(page.icon), label = page.label)
+            ) { padding ->
+                Row(Modifier.fillMaxSize().padding(padding)) {
+                    if (rail && shownDetail == null) NavigationRail(state = railState, modifier = Modifier.fillMaxHeight(),
+                        expandContentDescription = "展开侧栏", collapseContentDescription = "收起侧栏",
+                        color = MiuixTheme.colorScheme.surface.copy(alpha = 1f - aboutBlend), showDivider = aboutBlend == 0f) {
+                        pages.forEachIndexed { index, page ->
+                            NavigationRailItem(selected = selected == index, onClick = { selectPage(index) },
+                                icon = ImageVector.vectorResource(page.icon), label = page.label)
+                        }
                     }
-                }
-                if (buttonPage) Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.TopCenter) {
-                    Column(Modifier.widthIn(max = 840.dp).fillMaxSize().verticalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 12.dp)) { PenButtonSettings(penSnapshot) }
-                } else HorizontalPager(state = pager, modifier = Modifier.weight(1f).fillMaxHeight(), beyondViewportPageCount = 1) { index ->
-                    when (pages[index]) {
-                        RelegionPage.PEN -> PenScreen(onOpenSettings, onAllowBluetooth, onAllowNotifications,
-                            settledPage == RelegionPage.PEN && !pager.isScrollInProgress, { buttonPage = true }) { penSnapshot = it }
-                        RelegionPage.INTERCONNECT -> HyperConnectScreen()
-                        RelegionPage.GAME_REFRESH -> GameRefreshScreen()
-                        RelegionPage.ABOUT -> AboutScreen(aboutScene, aboutScroll, aboutHeaderHeight, aboutMotion) {
+                    if (shownDetail == DetailPage.FIRMWARE) Box(Modifier.weight(1f).fillMaxHeight()) {
+                        key(penSnapshot.getString("device"), penSnapshot.getBoolean("connected")) {
+                            PenFirmwareScreen(penSnapshot, active = detailPage == DetailPage.FIRMWARE)
+                        }
+                    } else if (shownDetail == DetailPage.BUTTONS) Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.TopCenter) {
+                        Column(Modifier.widthIn(max = 840.dp).fillMaxSize().verticalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp, vertical = 12.dp)) { PenButtonSettings(penSnapshot) }
+                    } else if (shownDetail == DetailPage.SETTINGS) Box(Modifier.weight(1f).fillMaxHeight()) {
+                        SettingsScreen(aboutMotion) {
                             aboutMotion = it
                             preferences.edit().putBoolean("about_motion", it).apply()
+                        }
+                    } else HorizontalPager(state = pager, modifier = Modifier.weight(1f).fillMaxHeight(), beyondViewportPageCount = 1) { index ->
+                        when (pages[index]) {
+                            RelegionPage.PEN -> PenScreen(penSnapshot, penScroll, onOpenSettings, onAllowBluetooth,
+                                onAllowNotifications, { if (detailPage == null) detailPage = DetailPage.BUTTONS },
+                                { if (detailPage == null) detailPage = DetailPage.FIRMWARE })
+                            RelegionPage.INTERCONNECT -> HyperConnectScreen()
+                            RelegionPage.GAME_REFRESH -> GameRefreshScreen()
+                            RelegionPage.ABOUT -> AboutScreen(aboutScene, aboutScroll, aboutHeaderHeight)
                         }
                     }
                 }
@@ -200,25 +270,15 @@ private fun RelegionScreen(onOpenSettings: () -> Unit, onAllowBluetooth: () -> U
 }
 
 @Composable
-private fun PenScreen(onOpenSettings: () -> Unit, onAllowBluetooth: () -> Unit, onAllowNotifications: () -> Unit, active: Boolean,
-                      onOpenButtons: () -> Unit, onSnapshot: (Bundle) -> Unit) {
+private fun rememberPenSnapshot(active: Boolean, firmwarePage: Boolean): Bundle {
     val lifecycle = LocalLifecycleOwner.current
     val context = androidx.compose.ui.platform.LocalContext.current
     var snapshot by remember { mutableStateOf(StateProvider.peek()) }
-    var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
-    val preferences = remember { context.getSharedPreferences("ui", android.content.Context.MODE_PRIVATE) }
-    var reminders by remember { mutableStateOf(preferences.getBoolean("connection_reminders", true)) }
-    var notificationAllowed by remember { mutableStateOf(false) }
-    var bluetoothAllowed by remember { mutableStateOf(false) }
-    LaunchedEffect(lifecycle, active) {
+    LaunchedEffect(lifecycle, active, firmwarePage) {
         if (!active) return@LaunchedEffect
         lifecycle.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             fun acceptSnapshot() {
-                snapshot = LocalPenReader.read(context, StateProvider.peek())
-                onSnapshot(snapshot)
-                now = SystemClock.elapsedRealtime()
-                notificationAllowed = context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-                bluetoothAllowed = context.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+                snapshot = LocalPenReader.read(context, StateProvider.peek(), firmwarePage)
             }
             val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
                 override fun onChange(selfChange: Boolean) = acceptSnapshot()
@@ -265,7 +325,18 @@ private fun PenScreen(onOpenSettings: () -> Unit, onAllowBluetooth: () -> Unit, 
             }
         }
     }
-    val fresh = PenIdentity.fresh(now, snapshot.getLong("sampled"))
+    return snapshot
+}
+
+@Composable
+private fun PenScreen(snapshot: Bundle, scroll: ScrollState, onOpenSettings: () -> Unit, onAllowBluetooth: () -> Unit,
+                      onAllowNotifications: () -> Unit, onOpenButtons: () -> Unit, onOpenFirmware: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val preferences = remember { context.getSharedPreferences("ui", android.content.Context.MODE_PRIVATE) }
+    var reminders by remember { mutableStateOf(preferences.getBoolean("connection_reminders", true)) }
+    val notificationAllowed = context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    val bluetoothAllowed = context.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+    val fresh = PenIdentity.fresh(SystemClock.elapsedRealtime(), snapshot.getLong("sampled"))
     val error = snapshot.getString("error", "")
     val connected = fresh && snapshot.getBoolean("connected") && error.isEmpty()
     val battery = PenIdentity.visibleBattery(connected, snapshot.getInt("battery", -1))
@@ -292,7 +363,7 @@ private fun PenScreen(onOpenSettings: () -> Unit, onAllowBluetooth: () -> Unit, 
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
             val wide = maxWidth >= 760.dp
-            val page = Modifier.widthIn(max = 1040.dp).fillMaxSize().align(Alignment.TopCenter).verticalScroll(rememberScrollState())
+            val page = Modifier.widthIn(max = 1040.dp).fillMaxSize().align(Alignment.TopCenter).verticalScroll(scroll)
                 .padding(horizontal = 16.dp, vertical = 12.dp)
             if (wide) {
                 Row(page, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -302,6 +373,7 @@ private fun PenScreen(onOpenSettings: () -> Unit, onAllowBluetooth: () -> Unit, 
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         PenInfoCard(snapshot, connected)
+                        FirmwareEntry(onOpenFirmware)
                         PenButtonEntry(onOpenButtons)
                         if (!fresh) SetupCard(onOpenSettings)
                         DetailCard(fresh, error)
@@ -311,6 +383,7 @@ private fun PenScreen(onOpenSettings: () -> Unit, onAllowBluetooth: () -> Unit, 
                 Column(page, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     HeroCard(penName, state, connected, battery, snapshot.getString("penModel", ""))
                     PenInfoCard(snapshot, connected)
+                    FirmwareEntry(onOpenFirmware)
                     PenButtonEntry(onOpenButtons)
                     if (!fresh) SetupCard(onOpenSettings)
                     reminderContent()
@@ -318,6 +391,13 @@ private fun PenScreen(onOpenSettings: () -> Unit, onAllowBluetooth: () -> Unit, 
                     Spacer(Modifier.height(12.dp))
                 }
             }
+    }
+}
+
+@Composable
+private fun FirmwareEntry(onOpenFirmware: () -> Unit) {
+    Card(Modifier.fillMaxWidth(), insideMargin = PaddingValues(0.dp)) {
+        ArrowPreference(title = "固件升级", summary = "查看当前版本并检查更新", onClick = onOpenFirmware)
     }
 }
 
